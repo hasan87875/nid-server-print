@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <title>NID Report</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans Bengali', sans-serif;
+      margin: 20px;
+      background: #f3f4f6;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&display=swap');
+
+    .card {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    img.photo {
+      width: 140px;
+      height: 160px;
+      object-fit: cover;
+      border: 1px solid #ddd;
+    }
+    .info {
+      margin-top: 10px;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    #qr {
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    .row {
+      display: flex;
+      gap: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="report">
+    <div class="row">
+      <div>
+        <img id="photo" class="photo" src="" alt="Photo" />
+        <canvas id="qr" width="120" height="120"></canvas>
+      </div>
+      <div class="info">
+        <h2><span id="nameBangla"></span></h2>
+        <p><strong>নাম (ইংরেজি):</strong> <span id="nameEnglish"></span></p>
+        <p><strong>জন্ম তারিখ:</strong> <span id="dob"></span></p>
+        <p><strong>লিঙ্গ:</strong> <span id="gender"></span></p>
+        <p><strong>ধর্ম:</strong> <span id="religion"></span></p>
+        <p><strong>রক্তের গ্রুপ:</strong> <span id="bloodGroup"></span></p>
+        <p><strong>পিতার নাম:</strong> <span id="father"></span></p>
+        <p><strong>মাতার নাম:</strong> <span id="mother"></span></p>
+        <p><strong>ঠিকানা:</strong> <span id="address"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center">
+    <button onclick="generatePDF()">📄 PDF ডাউনলোড করুন</button>
+  </div>
+
+  <script>
+    const apiURL = "https://unique-seba.com/api/servercopy2?api_key=1e0fc13be94e217f1ec34da77f2b4e83&nid=7355243812&dob=1999-11-11";
+
+    fetch(apiURL)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("nameBangla").textContent = data.nameBangla;
+        document.getElementById("nameEnglish").textContent = data.nameEnglish;
+        document.getElementById("dob").textContent = data.dateOfBirth;
+        document.getElementById("gender").textContent = data.gender;
+        document.getElementById("religion").textContent = data.religion;
+        document.getElementById("bloodGroup").textContent = data.bloodGroup;
+        document.getElementById("father").textContent = data.fatherName;
+        document.getElementById("mother").textContent = data.motherName;
+        document.getElementById("address").textContent = data.preAddress.addressLine;
+        document.getElementById("photo").src = data.photo;
+
+        // QR Code generate
+        new QRious({
+          element: document.getElementById('qr'),
+          value: data.nationalId + " - " + data.nameEnglish,
+          size: 120
+        });
+      });
+
+    function generatePDF() {
+      const element = document.getElementById("report");
+      html2pdf().from(element).save("nid-report.pdf");
+    }
+  </script>
+</body>
+</html>
