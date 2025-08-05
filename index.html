@@ -1,124 +1,159 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8" />
-  <title>Server Copy NID</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NID Server Copy</title>
   <style>
     body {
-      font-family: 'Nikosh', sans-serif;
-      background: #f5f5f5;
+      font-family: 'Siyam Rupali', sans-serif;
+      background: #f2f2f2;
       padding: 20px;
     }
-    .nid-container {
-      width: 800px;
-      margin: auto;
-      background: #fff;
-      border: 1px solid #000;
+    .container {
+      background: white;
       padding: 20px;
-      position: relative;
+      max-width: 800px;
+      margin: auto;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      font-size: 14px;
     }
     .header {
       text-align: center;
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 10px;
+      border-bottom: 1px solid #000;
+      margin-bottom: 20px;
     }
-    .section {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
+    .header img {
+      height: 80px;
     }
     .photo {
-      width: 150px;
-      height: 180px;
+      float: left;
+      width: 120px;
+      height: 150px;
       border: 1px solid #000;
-      object-fit: cover;
+      margin-right: 20px;
+      background-size: cover;
+      background-position: center;
+    }
+    .qr {
+      float: right;
+      width: 120px;
+      height: 120px;
     }
     .info {
-      width: 600px;
+      overflow: hidden;
     }
     .label {
       font-weight: bold;
     }
-    .line {
-      margin: 4px 0;
+    .seal {
+      text-align: right;
+      margin-top: 50px;
     }
-    .qr {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
+    .seal img {
+      height: 50px;
     }
-    #downloadBtn {
-      margin-top: 20px;
+    .download-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .input-section {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    input {
+      padding: 10px;
+      margin: 5px;
+      font-size: 16px;
+    }
+    #result {
+      display: none;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-  <div class="nid-container" id="nidContent">
-    <div class="header">জাতীয় পরিচয়পত্র (Server Copy)</div>
-    <div class="section">
-      <div class="info" id="infoSection">
-        <!-- API ডেটা এখানে বসবে -->
-      </div>
-      <img id="photo" class="photo" src="" alt="Photo" />
-    </div>
-    <div class="qr" id="qrCode"></div>
+  <div class="input-section">
+    <input type="text" id="nid" placeholder="NID নম্বর দিন">
+    <input type="date" id="dob">
+    <button onclick="fetchData()">সার্চ করুন</button>
   </div>
 
-  <button id="downloadBtn">📥 PDF ডাউনলোড করুন</button>
+  <div class="container" id="result">
+    <div class="header">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Seal_of_the_Election_Commission_of_Bangladesh.svg/2048px-Seal_of_the_Election_Commission_of_Bangladesh.svg.png" height="60" alt="logo">
+      <h2>গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h2>
+      <p>Bangladesh Election Commission</p>
+    </div>
+
+    <div class="info">
+      <div class="photo" id="photo"></div>
+      <div class="qr">
+        <img id="qr" width="120" height="120">
+      </div>
+      <p><span class="label">নাম (বাংলা):</span> <span id="nameBangla"></span></p>
+      <p><span class="label">Name (English):</span> <span id="nameEnglish"></span></p>
+      <p><span class="label">NID:</span> <span id="nationalId"></span></p>
+      <p><span class="label">জন্ম তারিখ:</span> <span id="dateOfBirth"></span></p>
+      <p><span class="label">পিতা:</span> <span id="fatherName"></span></p>
+      <p><span class="label">মাতা:</span> <span id="motherName"></span></p>
+      <p><span class="label">বর্তমান ঠিকানা:</span> <span id="presentAddress"></span></p>
+      <p><span class="label">স্থায়ী ঠিকানা:</span> <span id="permanentAddress"></span></p>
+    </div>
+
+    <div class="seal">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Seal_of_the_Election_Commission_of_Bangladesh.svg/2048px-Seal_of_the_Election_Commission_of_Bangladesh.svg.png">
+    </div>
+  </div>
+
+  <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
 
   <script>
-    const apiUrl = "https://unique-seba.com/api/servercopy2?api_key=1e0fc13be94e217f1ec34da77f2b4e83&nid=7355243812&dob=1999-11-11";
+    async function fetchData() {
+      const nid = document.getElementById('nid').value;
+      const dob = document.getElementById('dob').value;
+      const url = `https://unique-seba.com/api/servercopy2?api_key=1e0fc13be94e217f1ec34da77f2b4e83&nid=${nid}&dob=${dob}`;
 
-    async function fetchNIDData() {
-      const res = await fetch(apiUrl);
+      const res = await fetch(url);
       const data = await res.json();
 
-      document.getElementById("photo").src = data.photo;
-
-      const infoHTML = `
-        <div class="line"><span class="label">নাম (বাংলা):</span> ${data.nameBangla}</div>
-        <div class="line"><span class="label">Name (English):</span> ${data.nameEnglish}</div>
-        <div class="line"><span class="label">জন্ম তারিখ:</span> ${data.dateOfBirth}</div>
-        <div class="line"><span class="label">জাতীয় পরিচয়পত্র নম্বর:</span> ${data.nationalId}</div>
-        <div class="line"><span class="label">পিতা:</span> ${data.fatherName}</div>
-        <div class="line"><span class="label">মাতা:</span> ${data.motherName}</div>
-        <div class="line"><span class="label">স্থায়ী ঠিকানা:</span> ${data.perAddress.addressLine}</div>
-        <div class="line"><span class="label">বর্তমান ঠিকানা:</span> ${data.preAddress.addressLine}</div>
-      `;
-      document.getElementById("infoSection").innerHTML = infoHTML;
-
-      // QR Code
-      const qrData = `NID: ${data.nationalId}\nName: ${data.nameEnglish}\nDOB: ${data.dateOfBirth}`;
-      QRCode.toCanvas(document.createElement('canvas'), qrData, function (err, canvas) {
-        if (!err) {
-          document.getElementById('qrCode').appendChild(canvas);
-        }
-      });
+      if (data.nameBangla) {
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('nameBangla').innerText = data.nameBangla;
+        document.getElementById('nameEnglish').innerText = data.nameEnglish;
+        document.getElementById('nationalId').innerText = data.nationalId;
+        document.getElementById('dateOfBirth').innerText = data.dateOfBirth;
+        document.getElementById('fatherName').innerText = data.fatherName;
+        document.getElementById('motherName').innerText = data.motherName;
+        document.getElementById('presentAddress').innerText = data.preAddress.addressLine;
+        document.getElementById('permanentAddress').innerText = data.perAddress.addressLine;
+        document.getElementById('photo').style.backgroundImage = `url(${data.photo})`;
+        document.getElementById('qr').src = `https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=${data.nationalId}`;
+      } else {
+        alert("Data পাওয়া যায়নি। দয়া করে সঠিক NID এবং জন্মতারিখ দিন।");
+      }
     }
 
-    document.getElementById("downloadBtn").addEventListener("click", async () => {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [840, 600],
-      });
-
-      await html2canvas(document.getElementById("nidContent")).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
-        doc.addImage(imgData, "PNG", 10, 10, 580, 750);
-        doc.save("NID_Server_Copy.pdf");
-      });
-    });
-
-    // Load data on page load
-    fetchNIDData();
+    function downloadPDF() {
+      const element = document.getElementById("result");
+      const opt = {
+        margin:       0.5,
+        filename:     'nid-server-copy.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    }
   </script>
 
-  <!-- html2canvas must be included last -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link href="https://fonts.maateen.me/siyam-rupali/font.css" rel="stylesheet">
 </body>
 </html>
