@@ -33,8 +33,7 @@
       height: 150px;
       border: 1px solid #000;
       margin-right: 20px;
-      background-size: cover;
-      background-position: center;
+      object-fit: cover;
     }
     .qr {
       float: right;
@@ -94,7 +93,7 @@
     </div>
 
     <div class="info">
-      <div class="photo" id="photo"></div>
+      <img class="photo" id="photo" src="">
       <div class="qr">
         <img id="qr" width="120" height="120">
       </div>
@@ -134,7 +133,7 @@
         document.getElementById('motherName').innerText = data.motherName;
         document.getElementById('presentAddress').innerText = data.preAddress.addressLine;
         document.getElementById('permanentAddress').innerText = data.perAddress.addressLine;
-        document.getElementById('photo').style.backgroundImage = `url(${data.photo})`;
+        document.getElementById('photo').src = data.photo;
         document.getElementById('qr').src = `https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=${data.nationalId}`;
       } else {
         alert("Data পাওয়া যায়নি। দয়া করে সঠিক NID এবং জন্মতারিখ দিন।");
